@@ -3,7 +3,7 @@ from unittest.mock import patch
 import pytest
 
 from app.constants import DEFAULT_INTERVAL_MINS, AVG_SPEED_M_PER_MIN
-from backend.app.utils.find_parking import (
+from app.utils.find_parking import (
     _convert_time_interval_to_distance,
     _compute_cumsum_distances
 )

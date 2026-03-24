@@ -12,7 +12,7 @@ import requests
 from app.config import Settings, get_settings
 from app.constants import DEFAULT_INTERVAL_MINS
 from app.onemap import ApiKeyManager, get_api_key_manager
-from app.utils.parking import find_parking_spots_along_route
+from app.utils.find_parking import find_parking_spots_along_route
 from app.utils.route import transform_route_data
 
 load_dotenv()
