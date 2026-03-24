@@ -27,6 +27,9 @@ async def lifespan(app: FastAPI):
     initialize_connection_pool()
     logger.info("Database connection pool initialized")
 
+    fetch_and_update_spots()  # Initial fetch on startup
+    logger.info("Initial parking spots data fetched and updated")
+
     scheduler = BackgroundScheduler(jobstores=jobstores)
     scheduler.add_job(
         fetch_and_update_spots,
