@@ -36,6 +36,8 @@ This did not work. The idea was to schedule a cron job within the backend contai
 
 Maybe I can spin up a separate service solely for running cron jobs... Until then, the parking spots data would have to be manually updated.
 
+> Edit: Parking spots are now updated monthly using APScheduler inside the FastAPI server directly (i.e., instead of running the update scripts externally, it now runs as part of the server).
+
 ## Frontend
 
 Straightforward. Used a Node base image and followed some articles online for writing the Dockerfile [[1](https://medium.com/@itsuki.enjoy/dockerize-a-next-js-app-4b03021e084d)]. Had to reconfigure 2 things:
