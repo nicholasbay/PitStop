@@ -6,7 +6,13 @@ LOG_PATH = Path(__file__).resolve().parents[1] / 'logs' / 'pitstop.log'
 
 def setup_logging():
     root_logger = logging.getLogger()
+
+    # Prevent duplicate handlers when the app reloads in development.
+    if root_logger.handlers:
+        return
+
     root_logger.setLevel(logging.DEBUG)
+    LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
 
     file_handler = TimedRotatingFileHandler(
         LOG_PATH,
