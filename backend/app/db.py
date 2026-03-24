@@ -21,7 +21,6 @@ def initialize_connection_pool(min_size: int = 2, max_size: int = 10):
             f"user={os.getenv('POSTGRES_USER')} "
             f"password={os.getenv('POSTGRES_PASSWORD')}"
         )
-        
         _connection_pool = ConnectionPool(
             connection_string,
             min_size=min_size,
@@ -89,27 +88,3 @@ def execute_query(query: str, params: tuple = None) -> List[Dict[str, Any]]:
             results = [dict(zip(columns, row)) for row in rows]
             
             return results
-
-
-def execute_update(query: str, params: tuple = None) -> int:
-    """
-    Execute an INSERT, UPDATE, or DELETE query.
-    
-    Args:
-        query: SQL query string
-        params: Query parameters tuple
-        
-    Returns:
-        Number of rows affected
-        
-    Example:
-        rows_affected = execute_update(
-            "UPDATE parking_spots SET rack_count = %s WHERE id = %s",
-            (10, 123)
-        )
-    """
-    with get_db_connection() as conn:
-        with conn.cursor() as cursor:
-            cursor.execute(query, params)
-            conn.commit()
-            return cursor.rowcount
