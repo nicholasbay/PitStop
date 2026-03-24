@@ -1,0 +1,6 @@
+.next/
+node_modules/
+.git
+.gitignore
+next-env.d.ts
+.DS_Store

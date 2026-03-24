@@ -10,7 +10,7 @@ from app.db import execute_query
 
 def find_parking_spots_along_route(route, interval_mins: int) -> List[Dict]:
     """
-    Find bicycle parking spots along a given route within the specified interval distance.
+    Find parking spots spots along a given route within the specified interval distance.
 
     Args:
         route: Route object with geometry and summary.

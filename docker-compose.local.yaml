@@ -1,0 +1,69 @@
+name: pitstop-local
+services:
+  db:
+    build:
+      context: ./database
+      dockerfile: Dockerfile
+    platform: linux/amd64
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_HOST=db  # Service name as hostname
+      - POSTGRES_PORT=5432
+      - POSTGRES_DATABASE=pitstop_db
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    env_file:
+      - .env
+    volumes:
+      - pitstop-local-data:/var/lib/postgresql
+    networks:
+      - app_network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    platform: linux/amd64
+    depends_on:
+      - db
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    command: uvicorn app.main:app --host 0.0.0.0
+    environment:
+      - DATAMALL_ACCOUNT_KEY=${DATAMALL_ACCOUNT_KEY}
+      - ONEMAP_BASE_URL=https://www.onemap.gov.sg
+      - ONEMAP_EMAIL=${ONEMAP_EMAIL}
+      - ONEMAP_PASSWORD=${ONEMAP_PASSWORD}
+      - POSTGRES_HOST=db  # Service name as hostname
+      - POSTGRES_PORT=5432
+      - POSTGRES_DATABASE=pitstop_db
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    env_file:
+      - .env
+    networks:
+      - app_network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    platform: linux/amd64
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    networks:
+      - app_network
+
+networks:
+  app_network:
+    driver: bridge
+
+volumes:
+  pitstop-local-data:
+    name: pitstop-local-data

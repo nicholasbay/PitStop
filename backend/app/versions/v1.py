@@ -1,4 +1,5 @@
 from typing import Annotated
+import logging
 
 from dotenv import load_dotenv
 from fastapi import (
@@ -12,10 +13,11 @@ import requests
 from app.config import Settings, get_settings
 from app.constants import DEFAULT_INTERVAL_MINS
 from app.onemap import ApiKeyManager, get_api_key_manager
-from app.utils.parking import find_parking_spots_along_route
+from app.utils.find_parking import find_parking_spots_along_route
 from app.utils.route import transform_route_data
 
 load_dotenv()
+logger = logging.getLogger(__name__)
 router = APIRouter(
     prefix='/api/v1',
     tags=['v1']
@@ -31,7 +33,15 @@ def search(
     searchVal: str,
     pageNum: int = 1
 ):
+    """
+    Search for locations in Singapore using OneMap's Search API.
+
+    - `searchVal` (string, required): Search query (address, building name, postal code, etc.)
+
+    - `pageNum` (integer, optional): Page number of results to return (default: 1)
+    """
     try:
+        logger.info("/search request received", extra={"search_val": searchVal, "page_num": pageNum})
         token = api_dep.get_api_key()
         response = requests.get(
             f'{settings_dep.ONEMAP_BASE_URL}/api/common/elastic/search?searchVal={searchVal}&returnGeom=Y&getAddrDetails=Y&pageNum={pageNum}',
@@ -40,16 +50,19 @@ def search(
         response.raise_for_status()
         data = response.json()
         results = data.get('results', [])
+        logger.info("/search request succeeded", extra={"results_count": len(results)})
         return JSONResponse(
             content=results,
             status_code=status.HTTP_200_OK
         )
     except requests.RequestException as e:  # Error with OneMap API request
+        logger.warning("/search upstream request failed: %s", e)
         return JSONResponse(
             content={'error': str(e)},
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE
         )
     except Exception as e:
+        logger.exception("/search failed unexpectedly")
         return JSONResponse(
             content={'error': str(e)},
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -65,11 +78,21 @@ def get_routes(
     intervalMins: int = DEFAULT_INTERVAL_MINS
 ) -> JSONResponse:
     """
-    Returns a list of routes with its associated bicycle parking spots.
+    Find cycling routes with intermediate parking spots based on user-defined time intervals.
+
+    - `start` (string, required): Starting coordinates in `latitude,longitude` format (e.g., `1.2840,103.8514`)
+
+    - `end` (string, required): Ending coordinates in `latitude,longitude` format
+
+    - `intervalMins` (integer, optional): Time interval in minutes for parking spot placement (default: 30)
     """
     ONEMAP_ALT_ROUTES_KEY = 'alternativeroute'
 
     try:
+        logger.info(
+            "/routes request received",
+            extra={"interval_mins": intervalMins, "start": start, "end": end}
+        )
         token = api_dep.get_api_key()
         response = requests.get(
             f'{settings_dep.ONEMAP_BASE_URL}/api/public/routingsvc/route?start={start}&end={end}&routeType=cycle',
@@ -91,18 +114,21 @@ def get_routes(
             routes_with_parking.append(transform_route_data(alt_route, alt_spots))
 
         routes_with_parking.sort(key=lambda x: x['route_summary']['total_time_s'])  # Sort by total time in ascending order
+        logger.info("/routes request succeeded", extra={"routes_count": len(routes_with_parking)})
 
         return JSONResponse(
             content=routes_with_parking,
             status_code=status.HTTP_200_OK
         )
     except requests.RequestException as e:  # Error with OneMap API request
+        logger.warning("/routes upstream request failed: %s", e)
         return JSONResponse(
             content={'error': str(e)},
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE
         )
     except Exception as e:
         import traceback
+        logger.exception("/routes failed unexpectedly")
         return JSONResponse(
             content={'error': str(e), 'trace': traceback.format_exc()},
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR

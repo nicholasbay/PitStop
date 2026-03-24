@@ -1,0 +1,76 @@
+name: ps  # PitStop App Stack
+services:
+  pitstop-db:
+    build:
+      context: ./database
+      dockerfile: Dockerfile
+    platform: linux/amd64
+    restart: unless-stopped
+    environment:
+      - POSTGRES_HOST=pitstop-db  # Service name as hostname
+      - POSTGRES_PORT=5432
+      - POSTGRES_DATABASE=pitstop_db
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    env_file:
+      - path: .env
+        required: false
+      - path: stack.env  # For Portainer
+        required: false
+    volumes:
+      - pitstop-data:/var/lib/postgresql
+    networks:
+      - app_network
+
+  pitstop-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    platform: linux/amd64
+    depends_on:
+      - pitstop-db
+    restart: unless-stopped
+    command: uvicorn app.main:app --host 0.0.0.0
+    environment:
+      - DATAMALL_ACCOUNT_KEY=${DATAMALL_ACCOUNT_KEY}
+      - ONEMAP_BASE_URL=https://www.onemap.gov.sg
+      - ONEMAP_EMAIL=${ONEMAP_EMAIL}
+      - ONEMAP_PASSWORD=${ONEMAP_PASSWORD}
+      - POSTGRES_HOST=pitstop-db  # Service name as hostname
+      - POSTGRES_PORT=5432
+      - POSTGRES_DATABASE=pitstop_db
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    env_file:
+      - path: .env  # For local development
+        required: false
+      - path: stack.env  # For Portainer
+        required: false
+    networks:
+      - gateway_network
+      - app_network
+
+  pitstop-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    platform: linux/amd64
+    restart: unless-stopped
+    env_file:
+      - path: .env  # For local development
+        required: false
+      - path: stack.env  # For Portainer
+        required: false
+    networks:
+      - gateway_network
+      - app_network
+
+networks:
+  gateway_network:  # Existing external network in Portainer
+    external: true
+  app_network:
+    driver: bridge
+
+volumes:
+  pitstop-data:
+    name: pitstop-data

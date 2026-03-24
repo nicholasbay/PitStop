@@ -1,7 +1,6 @@
-.env
 .pytest_cache/
 .venv/
 __pycache__/
 
-data/bicycle_parking_data.ndjson
+data/spots_*.ndjson
 logs/
